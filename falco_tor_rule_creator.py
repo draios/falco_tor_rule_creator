@@ -221,22 +221,19 @@ def build_falco_rule(rule, addresses, tags, severity):
 
     rule_text = ""
     for direction in ['ingress', 'egress']:
+        if not rule[f'{direction}_rule']:
+            continue
+
         if direction == "ingress":
-            fd = "fd.cip"
             type = "accept"
             output = "Detected connection from known TOR Node to pod or host."
         else:
-            fd = "fd.sip"
             type = "connect"
             output = "Detected connection to known TOR Node from pod or host."
-
-        if not rule[f'{direction}_rule']:
-            _rule = ""
-        else:
-            _rule = f"""
+        _rule = f"""
 - rule: "{rule['rule_name']} ({direction})"
   desc: "Connections detected in pod or host. The rule was triggered by addresses known to be TOR Nodes"
-  condition: "evt.type = {type} and evt.dir = < and {fd} in ({rule['list_name']})"
+  condition: "evt.type = {type} and evt.dir = < and fd.rip in ({rule['list_name']})"
   output: "{output} %proc.cmdline %evt.args"
   priority: "{severity}"
   tags:
